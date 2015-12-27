@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xmlns:jms="http://www.springframework.org/schema/jms"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans.xsd 
+    http://www.springframework.org/schema/context 
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/jms
+    http://www.springframework.org/schema/jms/spring-jms-3.0.xsd">
+
+  <bean id="amqConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+    <!-- brokerURL -->
+    <constructor-arg index="0" value="tcp://localhost:61616" />
+  </bean>
+  
+  <bean id="connectionFactory"
+    class="org.springframework.jms.connection.CachingConnectionFactory">
+    <constructor-arg ref="amqConnectionFactory" />
+  </bean>
+  
+  <bean id="messageConverter" class="org.springframework.jms.support.converter.MappingJackson2MessageConverter">
+    <property name="typeIdPropertyName" value="__type" />
+  </bean>
+  
+  <!-- Destination Topic -->
+	<bean id="destinationTopic" class="org.apache.activemq.command.ActiveMQTopic">
+		<constructor-arg index="0" value="topicVitals" />
+	</bean>
+  
+  <bean id="jmsTopicTemplate" class="org.springframework.jms.core.JmsTemplate">
+    <property name="connectionFactory" ref="connectionFactory"/>
+    <property name="defaultDestination" ref= "destinationTopic"/>
+    <property name="pubSubDomain" value="true"/>
+    <property name="messageConverter" ref="messageConverter" />
+  </bean>
+  
+  <!-- Message Subscriber1 Container -->
+	<bean
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="destinationName" value="topicVitals" />
+		<property name="messageListener" ref="facilityMsgListener" />
+		<property name="pubSubDomain" value="true" />
+	</bean>
+  
+  <context:component-scan base-package="com.hcm.mq.consumer.service" />
+  
+</beans>
